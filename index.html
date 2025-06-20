@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Code Animation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            cursor: none;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            color: #00ff00;
+            font-size: 14px;
+        }
+        
+        .controls button {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+        }
+        
+        .controls button:hover {
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 10px #00ff00;
+        }
+        
+        .title {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #00ff00;
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ff00;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+    
+    <div class="controls">
+        <div>MATRIX SIMULATION</div>
+        <button onclick="toggleSpeed()">VELOCITÀ</button>
+        <button onclick="toggleDensity()">DENSITÀ</button>
+        <button onclick="toggleColors()">COLORI</button>
+    </div>
+    
+    <div class="title">THE MATRIX</div>
+
+    <script>
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        // Imposta le dimensioni del canvas
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Caratteri da utilizzare (giapponesi, numeri, lettere)
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const charArray = chars.split('');
+        
+        // Configurazione
+        let fontSize = 16;
+        let columns = canvas.width / fontSize;
+        let drops = [];
+        let speed = 1;
+        let density = 0.7;
+        let colorMode = 0; // 0: verde classico, 1: multicolore, 2: blu
+        
+        // Colori disponibili
+        const colors = [
+            ['#00ff00', '#008800', '#004400'], // Verde classico
+            ['#ff0080', '#00ff80', '#8000ff', '#ff8000'], // Multicolore
+            ['#0080ff', '#0040aa', '#002080'] // Blu
+        ];
+        
+        // Inizializza le gocce
+        function initDrops() {
+            columns = Math.floor(canvas.width / fontSize);
+            drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.random() * canvas.height / fontSize;
+            }
+        }
+        
+        initDrops();
+        
+        function draw() {
+            // Sfondo semi-trasparente per l'effetto di dissolvenza
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = fontSize + 'px Courier New';
+            
+            for (let i = 0; i < drops.length; i++) {
+                // Scegli un carattere casuale
+                const char = charArray[Math.floor(Math.random() * charArray.length)];
+                
+                // Scegli il colore in base alla modalità
+                let color;
+                const currentColors = colors[colorMode];
+                if (colorMode === 1) {
+                    color = currentColors[Math.floor(Math.random() * currentColors.length)];
+                } else {
+                    const intensity = Math.random();
+                    if (intensity > 0.8) color = currentColors[0]; // Brillante
+                    else if (intensity > 0.4) color = currentColors[1]; // Medio
+                    else color = currentColors[2]; // Scuro
+                }
+                
+                ctx.fillStyle = color;
+                
+                // Disegna il carattere
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
+                ctx.fillText(char, x, y);
+                
+                // Resetta la goccia quando raggiunge il fondo o casualmente
+                if (y > canvas.height && Math.random() > density) {
+                    drops[i] = 0;
+                }
+                
+                // Muovi la goccia verso il basso
+                drops[i] += speed * (0.5 + Math.random() * 0.5);
+            }
+        }
+        
+        // Funzioni di controllo
+        function toggleSpeed() {
+            speed = speed === 1 ? 2 : speed === 2 ? 0.5 : 1;
+        }
+        
+        function toggleDensity() {
+            density = density === 0.7 ? 0.9 : density === 0.9 ? 0.5 : 0.7;
+        }
+        
+        function toggleColors() {
+            colorMode = (colorMode + 1) % colors.length;
+        }
+        
+        // Gestione del resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initDrops();
+        });
+        
+        // Effetto di disturbo occasionale
+        setInterval(() => {
+            if (Math.random() < 0.1) {
+                for (let i = 0; i < drops.length; i++) {
+                    if (Math.random() < 0.05) {
+                        drops[i] = Math.random() * canvas.height / fontSize;
+                    }
+                }
+            }
+        }, 1000);
+        
+        // Avvia l'animazione
+        setInterval(draw, 50);
+        
+        // Easter egg: click per creare un'ondata
+        canvas.addEventListener('click', (e) => {
+            const clickX = Math.floor(e.clientX / fontSize);
+            for (let i = Math.max(0, clickX - 5); i < Math.min(drops.length, clickX + 5); i++) {
+                drops[i] = 0;
+            }
+        });
+        
+        // Cursore personalizzato
+        let mouseTrail = [];
+        canvas.addEventListener('mousemove', (e) => {
+            mouseTrail.push({x: e.clientX, y: e.clientY, time: Date.now()});
+            if (mouseTrail.length > 10) mouseTrail.shift();
+            
+            // Disegna la scia del mouse
+            ctx.save();
+            mouseTrail.forEach((point, index) => {
+                const age = Date.now() - point.time;
+                const opacity = Math.max(0, 1 - age / 1000);
+                ctx.fillStyle = `rgba(0, 255, 0, ${opacity * 0.5})`;
+                ctx.fillRect(point.x - 2, point.y - 2, 4, 4);
+            });
+            ctx.restore();
+        });
+    </script>
+</body>
+</html>
